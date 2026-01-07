@@ -222,6 +222,8 @@ const Resources = () => {
         const token = localStorage.getItem('token');
         
         try {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+
             // Standardized payload to only send the link and use 'Link' as fileType
             const payload = { 
                 title: newResource.title,
@@ -233,15 +235,29 @@ const Resources = () => {
             const method = isEditing ? 'PUT' : 'POST';
             const url = isEditing ? `/api/resources/${editingResource._id}` : '/api/resources';
 
-            const res = await fetch(url, {
+            const res = await fetch(`${apiBase}${url}`, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                 body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.msg || `Failed to ${isEditing ? 'update' : 'upload'} resource`);
+                // Backend might return plain text on errors; don't assume JSON.
+                let msg = `Failed to ${isEditing ? 'update' : 'upload'} resource`;
+                try {
+                    const text = await res.text();
+                    if (text) {
+                        try {
+                            const parsed = JSON.parse(text);
+                            msg = parsed?.msg || msg;
+                        } catch {
+                            msg = text;
+                        }
+                    }
+                } catch {
+                    // ignore
+                }
+                throw new Error(msg);
             }
             
             // Close modals and reset forms
@@ -423,9 +439,9 @@ const Resources = () => {
         <div className="space-y-8 animate-in fade-in duration-500 pb-10">
             
             {/* Header (Untouched) */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] drop-shadow-sm">
                         Resource Repository
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -437,22 +453,22 @@ const Resources = () => {
                     <button 
                         onClick={() => fetchResources(false)}
                         disabled={isRefreshing}
-                        className={`flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold rounded-xl transition-all ${
+                        className={`group flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 border ${
                             isRefreshing 
-                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed border-transparent'
+                            : 'bg-white/70 dark:bg-gray-900/40 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 border-white/30 dark:border-white/10 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
                         }`}
                         title="Refresh Feed"
                     >
-                        <RotateCw size={18} className={isRefreshing ? 'animate-spin' : ''} /> 
+                        <RotateCw size={18} className={isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'} /> 
                         {isRefreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
 
                     <button 
                         onClick={() => { setIsUploadOpen(true); setEditingResource(null); setNewResource({ title: '', subject: '', link: '' }); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 hover:scale-105"
+                        className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 hover:from-blue-500 hover:via-blue-600 hover:to-purple-500 text-white rounded-xl shadow-xl shadow-blue-500/35 transition-all duration-300 active:scale-95 hover:scale-105 animate-gradient bg-[length:200%_auto]"
                     >
-                        <UploadCloud size={20} />
+                        <UploadCloud size={20} className="group-hover:translate-y-[-1px] transition-transform" />
                         <span className="font-bold">Upload Resource</span>
                     </button>
                 </div>
@@ -464,14 +480,14 @@ const Resources = () => {
                 <div className="lg:col-span-3 space-y-6">
                     
                     {/* Toolbar (Search and Filters - Fixed) */}
-                    <div className="flex flex-col md:flex-row gap-4 glass-panel p-4 rounded-xl shadow-md">
+                    <div className="flex flex-col md:flex-row gap-4 glass-panel p-5 rounded-2xl shadow-xl border border-white/20 dark:border-white/10 backdrop-blur-2xl bg-white/60 dark:bg-black/30 animate-in fade-in slide-in-from-left-4 duration-500">
                         <div className="relative flex-1">
                             <input 
                                 type="text" 
                                 placeholder="Search notes, papers..." 
                                 // Use a high-value, explicit inline padding to override all CSS conflicts
                                 style={{ paddingLeft: '2.5rem' }} 
-                                className="w-full h-full glass-input rounded-xl text-gray-800 dark:text-white"
+                                className="w-full h-full glass-input rounded-xl text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -480,15 +496,15 @@ const Resources = () => {
                         </div>
                         
                         {/* Categories/Subject Filters (Untouched) */}
-                        <div className="flex gap-2 overflow-x-auto p-2 no-scrollbar border border-gray-200/50 dark:border-gray-700/50 rounded-xl">
+                        <div className="flex gap-2 overflow-x-auto p-2 no-scrollbar border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/30 dark:bg-black/20">
                             {categories.map(cat => (
                                 <button
                                 key={cat}
                                 onClick={() => setFilter(cat)}
-                                className={`px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border ${
+                                className={`px-3.5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 border hover:scale-105 active:scale-95 ${
                                     filter === cat 
-                                    ? 'bg-purple-600 border-purple-600 text-white shadow-md' 
-                                    : 'bg-white/40 dark:bg-gray-800/40 border-white/20 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-white/60 shadow-sm'
+                                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 border-transparent text-white shadow-lg shadow-purple-500/25' 
+                                    : 'bg-white/50 dark:bg-gray-800/30 border-white/20 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-800/50 shadow-sm'
                                 }`}
                                 >
                                 {cat}
@@ -507,30 +523,10 @@ const Resources = () => {
                                 const isAuthor = res.author._id === currentUserId; 
                                 
                                 return (
-                                    <div key={res._id} className="glass-panel p-4 rounded-2xl border-0 shadow-lg hover:bg-white/40 dark:hover:bg-gray-900/40 transition-colors flex flex-col md:flex-row gap-4 items-start md:items-center relative">
-
-                                        {/* Edit/Delete Buttons (Author Only) - NEW LOCATION beside subject/date */}
-                                        {isAuthor && (
-                                            <span className='ml-2'>
-                                                <button 
-                                                    onClick={() => handleEditResource(res)} 
-                                                    className="p-1 text-gray-500 hover:text-blue-500 rounded-full transition-colors" 
-                                                    title="Edit Resource"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDeleteResource(res._id)} 
-                                                    className="p-1 text-gray-500 hover:text-red-500 rounded-full transition-colors" 
-                                                    title="Delete Resource"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </span>
-                                        )}
+                                    <div key={res._id} className="group glass-panel p-5 rounded-2xl border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl hover:bg-white/50 dark:hover:bg-gray-900/40 transition-all duration-300 flex flex-col md:flex-row gap-4 items-start md:items-center relative hover:scale-[1.01]">
                                         
                                         {/* Icon Box */}
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-300 shrink-0">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/15 dark:border-white/10 flex items-center justify-center text-blue-600 dark:text-blue-300 shrink-0 group-hover:scale-110 transition-transform">
                                             {renderFileIcon(res.fileType)}
                                         </div>
                                         
@@ -541,7 +537,7 @@ const Resources = () => {
                                             {/* Top Line: Subject, Date, AND ICONS */}
                                             <div className="flex justify-between items-center flex-wrap gap-2 mb-1">
                                                 <div className="flex items-center flex-wrap gap-2">
-                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300">
+                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-gradient-to-r from-purple-500/15 to-blue-500/15 border border-purple-500/20 text-purple-700 dark:text-purple-300">
                                                         {res.subject}
                                                     </span>
                                                     <span className="text-xs font-mono text-gray-400">
@@ -549,10 +545,30 @@ const Resources = () => {
                                                     </span>
                                                 </div>
 
+                                                {/* Edit/Delete Buttons (Author Only) */}
+                                                {isAuthor && (
+                                                    <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={() => handleEditResource(res)} 
+                                                            className="p-1.5 text-gray-500 hover:text-blue-600 rounded-full transition-colors hover:bg-blue-500/10" 
+                                                            title="Edit Resource"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteResource(res._id)} 
+                                                            className="p-1.5 text-gray-500 hover:text-red-600 rounded-full transition-colors hover:bg-red-500/10" 
+                                                            title="Delete Resource"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                             </div>
 
                                             {/* Title - Now completely safe from overlap */}
-                                            <h3 className="font-bold text-gray-800 dark:text-white text-lg">
+                                            <h3 className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
                                                 {res.title}
                                             </h3>
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -565,9 +581,9 @@ const Resources = () => {
                                             <div className="flex items-center gap-4 text-gray-500 text-sm">
                                                 <button 
                                                     onClick={() => handleLike(res._id)}
-                                                    className={`flex items-center gap-1 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500 font-bold' : ''}`}
+                                                    className={`group/like flex items-center gap-1 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500 font-bold' : ''}`}
                                                 >
-                                                    <Heart size={18} className={isLiked ? 'fill-red-500' : ''}/> {res.likes.length}
+                                                    <Heart size={18} className={isLiked ? 'fill-red-500' : ''}/> <span className="group-hover/like:font-bold transition-all">{res.likes.length}</span>
                                                 </button>
                                                 <div className="flex items-center gap-1">
                                                     <Download size={18} /> {res.downloads}
@@ -575,9 +591,12 @@ const Resources = () => {
                                             </div>
                                             <button 
                                                 onClick={() => handleDownload(res._id)}
-                                                className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-xl text-sm font-bold hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                                className="group/btn px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-sm font-bold hover:from-blue-500 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 active:scale-95"
                                             >
-                                                Download
+                                                <span className="inline-flex items-center gap-2">
+                                                    Download
+                                                    <Download size={16} className="group-hover/btn:translate-y-[-1px] transition-transform" />
+                                                </span>
                                             </button>
                                         </div>
                                     </div>
@@ -597,7 +616,7 @@ const Resources = () => {
                 {/* RIGHT COLUMN (Untouched) */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* Top Contributors (REAL DATA) */}
-                    <div className="glass-panel p-5 rounded-2xl border-0 shadow-lg">
+                    <div className="glass-panel p-5 rounded-2xl border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.01]">
                         <h3 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                             <User size={20} className="text-yellow-500"/> Top Contributors
                         </h3>
@@ -626,21 +645,21 @@ const Resources = () => {
                     </div>
 
                     {/* Request Resource Button */}
-                    <div className="glass-panel p-5 rounded-2xl border-0 shadow-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10">
+                    <div className="glass-panel p-5 rounded-2xl border border-white/20 dark:border-white/10 shadow-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 hover:shadow-2xl transition-all duration-300 hover:scale-[1.01]">
                         <h3 className="font-bold text-gray-800 dark:text-white mb-2">Need Help?</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                             Can't find what you are looking for? Request a resource.
                         </p>
                         <button 
                             onClick={() => setIsRequestModalOpen(true)}
-                            className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-medium hover:bg-white/50 dark:hover:bg-black/50 transition-colors"
+                            className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-bold hover:bg-white/60 dark:hover:bg-black/50 transition-all duration-300 hover:scale-[1.02] active:scale-95"
                         >
                             Request Resource
                         </button>
                     </div>
                     
                     {/* Resource Requests Board (NEW) */}
-                    <div className="glass-panel p-5 rounded-2xl border-0 shadow-lg">
+                    <div className="glass-panel p-5 rounded-2xl border border-white/20 dark:border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.01]">
                         <h3 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                             <ArrowUp size={20} className="text-red-500"/> Top Requests
                         </h3>
@@ -651,7 +670,7 @@ const Resources = () => {
                                     const isRequester = req.requester._id.toString() === currentUserId;
                                     
                                     return (
-                                        <div key={req._id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg relative">
+                                        <div key={req._id} className="group p-3.5 bg-gray-50/80 dark:bg-gray-800/70 rounded-xl relative border border-white/40 dark:border-white/10 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300">
                                             
                                             {/* Management Buttons (Requester Only) */}
                                             {isRequester && (
@@ -679,7 +698,7 @@ const Resources = () => {
                                                 <span>Requested by {req.requester.name}</span>
                                                 <button 
                                                     onClick={() => handleUpvoteRequest(req._id)}
-                                                    className={`flex items-center gap-1 font-medium transition-colors ${isUpvoted ? 'text-red-500 font-bold' : 'hover:text-red-500'}`}
+                                                    className={`flex items-center gap-1 font-bold transition-colors ${isUpvoted ? 'text-red-500' : 'hover:text-red-500'}`}
                                                 >
                                                     <ArrowUp size={14} className={isUpvoted ? 'fill-red-500' : ''}/> {req.upvotes.length}
                                                 </button>
@@ -702,7 +721,7 @@ const Resources = () => {
         {/* --- UPLOAD/EDIT MODAL (Combined) --- */}
         <Modal 
             isOpen={isUploadOpen || isEditOpen} 
-            onClose={() => { setIsUploadOpen(false); setIsEditOpen(false); setEditingResource(null); }} 
+            onClose={() => { setIsUploadOpen(false); setIsEditOpen(false); setEditingResource(null); setIsSubjectDropdownOpen(false); }} 
             title={isEditOpen ? "Edit Resource" : "Upload Resource"}
         >
             <form onSubmit={handleResourceSubmit} className="space-y-4" noValidate>
@@ -803,7 +822,7 @@ const Resources = () => {
                     className={`w-full py-3 mt-4 rounded-xl font-bold transition-all shadow-lg ${
                         isSubmitting 
                             ? 'bg-gray-400 cursor-not-allowed flex items-center justify-center text-white' 
-                            : 'bg-blue-600 hover:bg-blue-700 active:scale-95 shadow-blue-500/30 text-white'
+                            : 'bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 hover:from-blue-500 hover:via-blue-600 hover:to-purple-500 active:scale-95 shadow-blue-500/30 text-white hover:shadow-xl hover:shadow-blue-500/40'
                     }`}
                 >
                     {isSubmitting ? <Loader2 size={20} className="animate-spin text-white" /> : (isEditOpen ? 'Save Changes' : 'Upload to Repository')}
@@ -855,7 +874,7 @@ const Resources = () => {
                     className={`w-full py-3 mt-4 rounded-xl font-bold transition-all shadow-lg ${
                         isSubmitting 
                             ? 'bg-gray-400 cursor-not-allowed flex items-center justify-center text-white' 
-                            : 'bg-red-600 hover:bg-red-700 active:scale-95 shadow-red-500/30 text-white'
+                            : 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 active:scale-95 shadow-red-500/30 text-white hover:shadow-xl hover:shadow-red-500/40'
                     }`}
                 >
                     {isSubmitting ? <Loader2 size={20} className="animate-spin text-white" /> : 'Submit Request'}

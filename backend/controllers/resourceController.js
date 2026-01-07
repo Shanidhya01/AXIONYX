@@ -45,7 +45,7 @@ exports.createResource = async (req, res) => {
         res.status(201).json(newResource);
     } catch (err) {
         console.error("Resource Creation Error:", err);
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error' });
     }
 };
 

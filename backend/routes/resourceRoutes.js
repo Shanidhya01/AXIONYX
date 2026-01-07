@@ -7,8 +7,24 @@ const multer = require('multer');
 
 const upload = multer({ dest: 'uploads/' });
 
+const maybeUploadSingle = (fieldName) => (req, res, next) => {
+	const contentType = String(req.headers['content-type'] || '');
+
+	// Only parse multipart requests with multer; allow JSON link-only payloads.
+	if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
+		return next();
+	}
+
+	return upload.single(fieldName)(req, res, (err) => {
+		if (err) {
+			return res.status(400).json({ msg: err.message || 'Invalid upload' });
+		}
+		return next();
+	});
+};
+
 // RESOURCES CRUD
-router.post('/', auth, upload.single('file'), resourceController.createResource);
+router.post('/', auth, maybeUploadSingle('file'), resourceController.createResource);
 router.get('/', auth, resourceController.getResources);
 router.put('/:id/like', auth, resourceController.toggleLike);
 router.put('/:id/download', auth, resourceController.incrementDownload);
