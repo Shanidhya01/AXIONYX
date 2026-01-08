@@ -33,7 +33,7 @@ const IS_VERCEL = !!process.env.VERCEL;
 const httpServer = IS_VERCEL ? null : createServer(app);
 
 const corsOptions = {
-    origin: process.env.CLIENT_URL, 
+    origin: process.env.CLIENT_URL || true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true, 
     optionsSuccessStatus: 200
@@ -58,6 +58,11 @@ app.set('io', io);
 app.use(cors(corsOptions)); 
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Lightweight routes that should never depend on DB
+app.get(['/','/favicon.ico','/favicon.png'], (req, res) => {
+    res.status(200).json({ ok: true, service: 'axionyx-backend' });
+});
 
 // --- 5. PASSPORT/SESSION MIDDLEWARE ---
 const sessionSecret = process.env.SESSION_SECRET;
@@ -199,11 +204,25 @@ const connectToMongo = () => {
     return mongoConnectionPromise;
 };
 
-connectToMongo().then(() => {
-    if (!IS_VERCEL) {
-        httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Connect to Mongo lazily for API requests (prevents cold-start crashes/timeouts)
+app.use('/api', async (req, res, next) => {
+    if (mongoose.connection.readyState === 1) return next();
+    if (!process.env.MONGO_URI) {
+        return res.status(500).json({ msg: 'Server misconfigured: MONGO_URI is not set' });
+    }
+    try {
+        await connectToMongo();
+        return next();
+    } catch (e) {
+        return res.status(500).json({ msg: 'Database connection failed' });
     }
 });
+
+if (!IS_VERCEL) {
+    connectToMongo().then(() => {
+        httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    });
+}
 
 module.exports = app;
 
