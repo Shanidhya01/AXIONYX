@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'; // Added useEffect
-import { Play, Pause, RotateCcw, Coffee, Brain, Zap, Volume2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, Brain, Zap, Volume2, Plus, Minus } from 'lucide-react';
 
 const PomodoroTimer = ({ 
   mode, 
@@ -8,7 +8,10 @@ const PomodoroTimer = ({
   isActive, 
   setIsActive, 
   onReset,
-  isAlarmRinging
+  isAlarmRinging,
+  customMinutes,
+  setCustomMinutes,
+  onAdjustTime
 }) => {
   
   const modes = {
@@ -78,6 +81,36 @@ const PomodoroTimer = ({
                 </button>
             ))}
         </div>
+
+        {/* Time Adjustment Controls - Only show when not running */}
+        {!isActive && !isAlarmRinging && (
+          <div className="flex items-center gap-4 mb-6 bg-gradient-to-r from-gray-100 to-slate-100 dark:from-gray-800 dark:to-slate-800 px-6 py-3 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => onAdjustTime(-5)}
+              className="p-2.5 rounded-xl bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 text-red-600 dark:text-red-400 hover:from-red-200 hover:to-rose-200 dark:hover:from-red-900/50 dark:hover:to-rose-900/50 transition-all shadow-md hover:scale-110 active:scale-95 hover:shadow-lg"
+              title="Decrease 5 minutes"
+              disabled={customMinutes <= 1}
+            >
+              <Minus size={20} strokeWidth={3} />
+            </button>
+            <div className="text-center min-w-[80px]">
+              <div className="text-3xl font-mono font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {customMinutes}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">
+                minutes
+              </div>
+            </div>
+            <button
+              onClick={() => onAdjustTime(5)}
+              className="p-2.5 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-900/50 dark:hover:to-indigo-900/50 transition-all shadow-md hover:scale-110 active:scale-95 hover:shadow-lg"
+              title="Increase 5 minutes"
+              disabled={customMinutes >= 120}
+            >
+              <Plus size={20} strokeWidth={3} />
+            </button>
+          </div>
+        )}
 
         {/* 2. Circular Timer Visualization */}
         <div className="relative mb-8 group cursor-pointer" onClick={() => setIsActive(!isActive)}>

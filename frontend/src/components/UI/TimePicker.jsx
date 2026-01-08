@@ -63,26 +63,30 @@ const TimePicker = ({ value, onChange }) => {
       {/* Trigger Button */}
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full glass-input rounded-xl px-4 py-2 cursor-pointer text-gray-800 dark:text-white transition-all hover:bg-white/60 dark:hover:bg-black/40"
+        className="flex items-center justify-between w-full glass-input rounded-xl px-4 py-2.5 cursor-pointer text-gray-800 dark:text-white transition-all hover:bg-white/60 dark:hover:bg-black/40 hover:scale-[1.01] active:scale-[0.99] border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md"
       >
-        <span className={value ? "font-medium" : "text-gray-400"}>
+        <span className={value ? "font-semibold" : "text-gray-400"}>
           {value ? `${timeState.hour}:${timeState.minute} ${timeState.period}` : 'Select Time'}
         </span>
-        <Clock size={18} className="text-gray-500" />
+        <Clock size={18} className={value ? "text-blue-500" : "text-gray-400"} />
       </div>
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 p-3 w-full min-w-[200px] glass-panel rounded-2xl z-50 bg-white/90 dark:bg-black/90 backdrop-blur-xl animate-in fade-in zoom-in-95 grid grid-cols-3 gap-2">
+        <div className="absolute top-full left-0 mt-2 p-4 w-full min-w-[200px] glass-panel rounded-2xl z-50 bg-white/95 dark:bg-black/95 backdrop-blur-xl animate-in fade-in zoom-in-95 shadow-2xl border border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-3">
           
           {/* Hours Column */}
-          <div className="h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 text-center border-r border-gray-200 dark:border-gray-700 pr-1">
-            <span className="text-xs text-gray-400 font-bold mb-1 sticky top-0 bg-white dark:bg-black py-1">HR</span>
+          <div className="h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 text-center border-r border-gray-200 dark:border-gray-700 pr-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 sticky top-0 bg-white dark:bg-black py-1.5 uppercase tracking-wider">HR</span>
             {hours.map(h => (
               <button
                 key={h}
                 onClick={(e) => { e.preventDefault(); handleSelect('hour', h); }}
-                className={`py-1 rounded-md text-sm transition-colors ${timeState.hour === h ? 'bg-blue-600 text-white font-bold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                className={`py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  timeState.hour === h 
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-md shadow-blue-500/30 scale-105' 
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105 active:scale-95'
+                }`}
               >
                 {h}
               </button>
@@ -90,13 +94,17 @@ const TimePicker = ({ value, onChange }) => {
           </div>
 
           {/* Minutes Column */}
-          <div className="h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 text-center border-r border-gray-200 dark:border-gray-700 pr-1">
-            <span className="text-xs text-gray-400 font-bold mb-1 sticky top-0 bg-white dark:bg-black py-1">MIN</span>
+          <div className="h-40 overflow-y-auto custom-scrollbar flex flex-col gap-1 text-center border-r border-gray-200 dark:border-gray-700 pr-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 sticky top-0 bg-white dark:bg-black py-1.5 uppercase tracking-wider">MIN</span>
             {minutes.map(m => (
               <button
                 key={m}
                 onClick={(e) => { e.preventDefault(); handleSelect('minute', m); }}
-                className={`py-1 rounded-md text-sm transition-colors ${timeState.minute === m ? 'bg-blue-600 text-white font-bold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                className={`py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  timeState.minute === m 
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-md shadow-blue-500/30 scale-105' 
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105 active:scale-95'
+                }`}
               >
                 {m}
               </button>
@@ -104,12 +112,16 @@ const TimePicker = ({ value, onChange }) => {
           </div>
 
           {/* Period Column */}
-          <div className="h-40 flex flex-col gap-1 text-center justify-center">
+          <div className="h-40 flex flex-col gap-2 text-center justify-center">
             {periods.map(p => (
               <button
                 key={p}
                 onClick={(e) => { e.preventDefault(); handleSelect('period', p); }}
-                className={`py-2 rounded-md text-sm font-bold transition-colors ${timeState.period === p ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                className={`py-3 rounded-lg text-sm font-bold transition-all ${
+                  timeState.period === p 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/40 scale-110' 
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:scale-105 active:scale-95'
+                }`}
               >
                 {p}
               </button>
