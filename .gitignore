@@ -10,6 +10,9 @@
 
 # Firebase Admin service account (NEVER commit)
 /backend/*.json
+!/backend/vercel.json
+!/backend/package.json
+!/backend/package-lock.json
 
 # Logs and Build files
 npm-debug.log*
