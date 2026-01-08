@@ -4,6 +4,7 @@ import {
     ChevronDown, Check, UploadCloud, File, Loader2, Image, Send, ArrowUp, RotateCw, Edit, Trash2, AlertTriangle, X
 } from 'lucide-react';
 import Modal from '../components/UI/Modal';
+import { showSuccess, showError } from '../lib/toast';
 
 // Helper for input styling validation
 const getInputClass = (errors, field) => `
@@ -103,6 +104,7 @@ const Resources = () => {
 
         } catch (err) {
             console.error("Failed to fetch resources:", err);
+            if (!silent) showError('Failed to load resources. Please refresh.');
         } finally {
             if (!silent) setLoading(false);
             setIsRefreshing(false);
@@ -145,6 +147,7 @@ const Resources = () => {
             });
         } catch (err) {
             console.error("Like failed, reverting UI:", err);
+            showError('Failed to like resource.');
             await fetchResources();
         }
     };
@@ -179,11 +182,14 @@ const Resources = () => {
                 setResources(prev => prev.map(r => 
                     r._id === resourceId ? { ...r, downloads: r.downloads + 1 } : r
                 ));
+                showSuccess('Download started!');
             } else {
+                showError("Download failed: The resource link is missing or invalid.");
                 alert("Download failed: The resource link is missing or invalid. Ensure the link is publicly accessible.");
             }
         } catch (err) {
             console.error("Download failure:", err);
+            showError("A network error occurred during download.");
             alert("A network error occurred during download.");
         }
     };
@@ -261,6 +267,7 @@ const Resources = () => {
             }
             
             // Close modals and reset forms
+            showSuccess(isEditing ? 'Resource updated successfully!' : 'Resource uploaded successfully!');
             setIsUploadOpen(false);
             setIsEditOpen(false);
             setEditingResource(null);
@@ -269,6 +276,7 @@ const Resources = () => {
             await fetchResources();
 
         } catch (err) {
+            showError(err.message);
             alert(err.message);
             console.error("Resource Submission Error:", err);
         } finally {
@@ -299,11 +307,14 @@ const Resources = () => {
 
             if (res.ok) {
                 setResources(prev => prev.filter(r => r._id !== resourceId));
+                showSuccess('Resource deleted successfully!');
             } else {
                 const errorData = await res.json();
+                showError(errorData.msg || 'Failed to delete resource');
                 throw new Error(errorData.msg || 'Failed to delete resource');
             }
         } catch (err) {
+            showError(`Error deleting resource: ${err.message}`);
             alert(`Error deleting resource: ${err.message}`);
             console.error("Delete failed:", err);
         }
@@ -336,15 +347,18 @@ const Resources = () => {
 
             if (!res.ok) {
                 const errorData = await res.json();
+                showError(errorData.msg || 'Failed to submit request');
                 throw new Error(errorData.msg || 'Failed to submit request');
             }
             
+            showSuccess('Request submitted successfully!');
             setIsRequestModalOpen(false);
             setNewRequest({ title: '', subject: '' });
             setErrors({});
             await fetchResources();
 
         } catch (err) {
+            showError(err.message);
             alert(err.message);
             console.error("Request Error:", err);
         } finally {
@@ -376,6 +390,7 @@ const Resources = () => {
             });
         } catch (err) {
             console.error("Upvote failed, reverting UI:", err);
+            showError('Failed to upvote request.');
             await fetchResources();
         }
     };
@@ -388,9 +403,11 @@ const Resources = () => {
                 method: 'PUT',
                 headers: { 'x-auth-token': token }
             });
+            showSuccess('Request marked as fulfilled!');
             await fetchResources();
         } catch (err) {
             console.error("Fulfill failed:", err);
+            showError("Failed to mark request as fulfilled.");
             alert("Failed to mark request as fulfilled.");
         }
     };
@@ -417,11 +434,14 @@ const Resources = () => {
 
             if (res.ok) {
                 setRequests(prev => prev.filter(r => r._id !== requestId));
+                showSuccess('Request deleted successfully!');
             } else {
                 const errorData = await res.json();
+                showError(errorData.msg || 'Failed to delete request');
                 throw new Error(errorData.msg || 'Failed to delete request');
             }
         } catch (err) {
+            showError(`Error deleting request: ${err.message}`);
             alert(`Error deleting request: ${err.message}`);
             console.error("Delete request failed:", err);
         }

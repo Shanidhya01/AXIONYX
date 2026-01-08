@@ -19,6 +19,7 @@ import {
 import StatCard from "../components/UI/StatCard";
 import Modal from "../components/UI/Modal";
 import PomodoroTimer from "../components/UI/PomodoroTimer";
+import { showSuccess, showError } from '../lib/toast';
 
 const Dashboard = ({ user }) => {
   // --- STATE ---
@@ -85,6 +86,7 @@ const Dashboard = ({ user }) => {
         }
       } catch (err) {
         console.error("Fetch Error:", err);
+        showError('Failed to load dashboard data. Please refresh.');
       } finally {
         setLoading(false);
       }
@@ -123,43 +125,67 @@ const Dashboard = ({ user }) => {
       .toISOString()
       .split("T")[0];
 
-    const todaysClasses = subjects.flatMap((sub) =>
-      sub.schedule
+    const todaysClasses = subjects.flatMap((sub) => {
+      // First, deduplicate schedule slots within this subject
+      const uniqueSlots = sub.schedule
         .filter((slot) => slot.day === today)
-        .map((slot) => {
-          const [startH, startM] = slot.startTime.split(":").map(Number);
-          const [endH, endM] = slot.endTime.split(":").map(Number);
-          const startTotal = startH * 60 + startM;
-          const endTotal = endH * 60 + endM;
-
-          let timeStatus = "upcoming";
-          if (currentMinutes > endTotal) timeStatus = "past";
-          else if (currentMinutes >= startTotal && currentMinutes <= endTotal)
-            timeStatus = "live";
-
-          // CHECK HISTORY
-          const historyLog = sub.history.find(
-            (h) => h.date === todayStr && h.slotId === slot.startTime
+        .reduce((acc, slot) => {
+          const isDuplicate = acc.find(
+            s => s.startTime === slot.startTime && 
+                 s.endTime === slot.endTime && 
+                 s.room === slot.room
           );
-          const attendanceStatus = historyLog ? historyLog.status : "pending";
+          if (!isDuplicate) {
+            acc.push(slot);
+          }
+          return acc;
+        }, []);
 
-          return {
-            id: sub._id,
-            subject: sub.name,
-            location: slot.room || "TBA",
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            history: sub.history || [],
-            slotId: `${sub._id}-${slot.startTime}`,
-            timeStatus,
-            attendanceStatus,
-          };
-        })
-    );
+      // Then process the unique slots
+      return uniqueSlots.map((slot) => {
+        const [startH, startM] = slot.startTime.split(":").map(Number);
+        const [endH, endM] = slot.endTime.split(":").map(Number);
+        const startTotal = startH * 60 + startM;
+        const endTotal = endH * 60 + endM;
 
-    todaysClasses.sort((a, b) => a.startTime.localeCompare(b.startTime));
-    setSchedule(todaysClasses);
-    return todaysClasses;
+        let timeStatus = "upcoming";
+        if (currentMinutes > endTotal) timeStatus = "past";
+        else if (currentMinutes >= startTotal && currentMinutes <= endTotal)
+          timeStatus = "live";
+
+        // CHECK HISTORY
+        const historyLog = sub.history.find(
+          (h) => h.date === todayStr && h.slotId === slot.startTime
+        );
+        const attendanceStatus = historyLog ? historyLog.status : "pending";
+
+        return {
+          id: sub._id,
+          subject: sub.name,
+          subjectCode: sub.code || "",
+          location: slot.room || "TBA",
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          history: sub.history || [],
+          slotId: `${sub._id}-${slot.startTime}`,
+          timeStatus,
+          attendanceStatus,
+        };
+      });
+    });
+
+    // Remove duplicates based on unique slotId (subject ID + startTime)
+    const uniqueClasses = todaysClasses.reduce((acc, current) => {
+      const duplicate = acc.find(item => item.slotId === current.slotId);
+      if (!duplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    uniqueClasses.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    setSchedule(uniqueClasses);
+    return uniqueClasses;
   };
 
   const calculateStats = (subjects, assignments, studyStats) => {
@@ -220,8 +246,15 @@ const Dashboard = ({ user }) => {
           }),
         }
       );
+      
+      if (status === 'present') {
+        showSuccess('Attendance marked as Present!');
+      } else if (status === 'absent') {
+        showSuccess('Attendance marked as Absent.');
+      }
     } catch (err) {
       console.error("API Error", err);
+      showError('Failed to mark attendance. Please try again.');
     }
 
     // Remove from pending popup list
@@ -250,6 +283,7 @@ const Dashboard = ({ user }) => {
     } else if (timeLeft === 0 && isTimerActive) {
       setIsTimerActive(false);
       setIsAlarmRinging(true);
+      showSuccess('Pomodoro session complete! Time for a break.');
       alarmRef.current.play().catch((e) => console.log("Audio failed", e));
     }
     return () => clearInterval(interval);
@@ -437,15 +471,22 @@ const Dashboard = ({ user }) => {
                                     `}
                           >
                             <div className="flex justify-between items-start">
-                              <h3
-                                className={`font-bold text-gray-800 dark:text-white truncate pr-2 ${
-                                  item.attendanceStatus === "cancelled"
-                                    ? "line-through decoration-gray-400"
-                                    : ""
-                                }`}
-                              >
-                                {item.subject}
-                              </h3>
+                              <div className="flex-1">
+                                <h3
+                                  className={`font-bold text-gray-800 dark:text-white truncate pr-2 ${
+                                    item.attendanceStatus === "cancelled"
+                                      ? "line-through decoration-gray-400"
+                                      : ""
+                                  }`}
+                                >
+                                  {item.subject}
+                                </h3>
+                                {item.subjectCode && item.subjectCode !== item.subject && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {item.subjectCode}
+                                  </p>
+                                )}
+                              </div>
                               <div className="flex flex-col items-end">
                                 <span className="text-xs font-mono text-gray-500">
                                   {item.startTime}

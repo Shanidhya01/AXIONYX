@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Modal from "../components/UI/Modal";
+import { showSuccess, showError } from '../lib/toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -350,11 +351,15 @@ const Chat = () => {
         }
       );
       if (res.ok) {
+        showSuccess('Group created successfully!');
         setIsCreateGroupOpen(false);
         setNewGroupName("");
+      } else {
+        showError('Failed to create group.');
       }
     } catch (err) {
       console.error(err);
+      showError('Error creating group.');
     }
   };
   const confirmDeleteGroup = async () => {
@@ -368,10 +373,14 @@ const Chat = () => {
         { method: "DELETE", headers: { "x-auth-token": token } }
       );
       if (res.ok) {
+        showSuccess('Group deleted successfully!');
         setGroupToDelete(null);
+      } else {
+        showError('Failed to delete group.');
       }
     } catch (e) {
       console.error(e);
+      showError('Error deleting group.');
     }
   };
   const sendMessage = async () => {
@@ -439,12 +448,15 @@ const Chat = () => {
     );
     if (res.ok) {
       setSentRequests([...sentRequests, targetUser]);
+      showSuccess(`Friend request sent to ${targetUser.name}!`);
       setModalMessage({
         title: "Request Sent",
         msg: `Friend request sent to ${targetUser.name}!`,
         type: "success",
       });
       refreshSocialData();
+    } else {
+      showError('Failed to send friend request.');
     }
   };
   const acceptRequest = async (senderId) => {
@@ -454,6 +466,7 @@ const Chat = () => {
       headers: { "Content-Type": "application/json", "x-auth-token": token },
       body: JSON.stringify({ senderId }),
     });
+    showSuccess('You are now friends!');
     refreshSocialData();
     setModalMessage({
       title: "Connected",
@@ -485,10 +498,13 @@ const Chat = () => {
     );
     if (res.ok) {
       setFriends(friends.filter((f) => f._id !== friendToRemove._id));
+      showSuccess('Friend removed.');
       if (activeRoom && activeRoom.includes(friendToRemove._id))
         setActiveRoom(null);
       refreshSocialData();
       setFriendToRemove(null);
+    } else {
+      showError('Failed to remove friend.');
     }
   };
   const getButtonStatus = (targetId) => {

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Modal from "../components/UI/Modal";
 import DatePicker from "../components/UI/DatePicker";
+import { showSuccess, showError } from '../lib/toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -212,19 +213,22 @@ const Career = () => {
 
       const data = await safeJson(res);
       if (!res.ok) {
-        setSaveError(
-          data?.msg ||
+        const errorMsg = data?.msg ||
             data?.message ||
-            "Could not save the application. Please try again."
-        );
+            "Could not save the application. Please try again.";
+        showError(errorMsg);
+        setSaveError(errorMsg);
         return;
       }
 
+      showSuccess(isEditing ? 'Job application updated!' : 'Job application added!');
       await fetchJobs();
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      setSaveError("Network error. Could not reach server.");
+      const errorMsg = "Network error. Could not reach server.";
+      showError(errorMsg);
+      setSaveError(errorMsg);
     } finally {
       setIsSaving(false);
     }
@@ -239,9 +243,15 @@ const Career = () => {
           method: "DELETE",
           headers: { "x-auth-token": token },
         });
-        if (res.ok) setJobs(jobs.filter((j) => j._id !== id));
+        if (res.ok) {
+          setJobs(jobs.filter((j) => j._id !== id));
+          showSuccess('Job application deleted!');
+        } else {
+          showError('Failed to delete job application.');
+        }
       } catch (err) {
         console.error(err);
+        showError('Error deleting job application.');
       }
     }
   };

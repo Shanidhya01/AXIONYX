@@ -3,6 +3,7 @@ import { Plus, Layout } from 'lucide-react';
 import TaskCard from '../components/UI/TaskCard';
 import Modal from '../components/UI/Modal';
 import DatePicker from '../components/UI/DatePicker';
+import { showSuccess, showError } from '../lib/toast';
 
 const Assignments = () => {
   const [tasks, setTasks] = useState([]); // Empty initially
@@ -64,12 +65,16 @@ const Assignments = () => {
       
       if (res.ok) {
         setTasks([savedTask, ...tasks]); // Add real DB task to UI
+        showSuccess('Assignment added successfully!');
         setNewTask({ title: '', subject: '', dueDate: '' });
         setErrors({});
         setIsAddOpen(false);
+      } else {
+        showError('Failed to add assignment. Please try again.');
       }
     } catch (err) {
       console.error("Error adding task:", err);
+      showError('Error adding assignment. Please check your connection.');
     }
   };
 
@@ -102,8 +107,10 @@ const Assignments = () => {
             },
             body: JSON.stringify({ status: newStatus })
         });
+        showSuccess(`Task moved to ${newStatus}!`);
       } catch (err) {
         console.error("Error updating status:", err);
+        showError('Failed to update task status.');
         // Optional: Revert UI if error occurs
       }
     }
@@ -120,9 +127,13 @@ const Assignments = () => {
 
         if (res.ok) {
             setTasks(tasks.filter(t => t._id !== id));
+            showSuccess('Assignment deleted successfully!');
+        } else {
+            showError('Failed to delete assignment.');
         }
     } catch (err) {
         console.error("Error deleting task:", err);
+        showError('Error deleting assignment.');
     }
   };
 

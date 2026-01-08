@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Modal from "../components/UI/Modal";
+import { showSuccess, showError } from '../lib/toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -428,6 +429,7 @@ const Community = () => {
       await fetchAllData(true);
 
       // Clear form and reset states
+      showSuccess(isEditing ? 'Post updated successfully!' : 'Post created successfully!');
       setPostForm({
         title: "",
         content: "",
@@ -439,7 +441,9 @@ const Community = () => {
       setIsCreateOpen(false);
       setIsEditOpen(false);
     } catch (err) {
-      setPostError(err.message || "An unknown error occurred.");
+      const errorMsg = err.message || "An unknown error occurred.";
+      showError(errorMsg);
+      setPostError(errorMsg);
     } finally {
       // --- END SUBMISSION PROTECTION ---
       setIsSubmitting(false);
@@ -485,14 +489,17 @@ const Community = () => {
       if (res.ok) {
         // Optimistically remove from view
         setPosts((prev) => prev.filter((p) => p._id !== postId));
+        showSuccess('Post deleted successfully!');
       } else {
         const errorData = await safeJson(res);
-        throw new Error(
-          errorData?.msg || errorData?.message || "Failed to delete post"
-        );
+        const errorMsg = errorData?.msg || errorData?.message || "Failed to delete post";
+        showError(errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (err) {
-      setPostError(err.message || "Failed to delete post.");
+      const errorMsg = err.message || "Failed to delete post.";
+      showError(errorMsg);
+      setPostError(errorMsg);
       console.error("Delete failed:", err);
     }
   };
@@ -531,9 +538,11 @@ const Community = () => {
       );
 
       if (!res.ok) {
+        showError('Failed to like post.');
         await fetchAllData(true); // Revert UI if API fails
       }
     } catch (err) {
+      showError('Failed to like post.');
       await fetchAllData(true);
       console.error("Like failed:", err);
     }
@@ -590,11 +599,12 @@ const Community = () => {
       const newComment = await safeJson(res);
 
       if (!res.ok) {
-        throw new Error(
-          newComment?.msg || newComment?.message || "Failed to add comment"
-        );
+        const errorMsg = newComment?.msg || newComment?.message || "Failed to add comment";
+        showError(errorMsg);
+        throw new Error(errorMsg);
       }
 
+      showSuccess('Comment added!');
       setAllComments((prev) => ({
         ...prev,
         [postId]: [...(prev[postId] || []), newComment],
@@ -606,7 +616,9 @@ const Community = () => {
       );
     } catch (err) {
       console.error("Failed to add comment:", err);
-      setPostError(err.message || "Failed to add comment.");
+      const errorMsg = err.message || "Failed to add comment.";
+      showError(errorMsg);
+      setPostError(errorMsg);
     }
   };
 

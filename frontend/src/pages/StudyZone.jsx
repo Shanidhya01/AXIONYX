@@ -13,6 +13,7 @@ import StudyCard from "../components/UI/StudyCard";
 import Modal from "../components/UI/Modal";
 import DatePicker from "../components/UI/DatePicker";
 import TimePicker from "../components/UI/TimePicker";
+import { showSuccess, showError } from '../lib/toast';
 
 // Helper to get current user ID from JWT token
 const getCurrentUserId = () => {
@@ -99,8 +100,10 @@ const StudyZone = () => {
       );
       const data = await res.json();
       if (res.ok) setSessions(data);
+      else showError('Failed to load study sessions.');
     } catch (err) {
       console.error(err);
+      showError('Error loading study sessions.');
     } finally {
       setLoading(false);
     }
@@ -132,6 +135,7 @@ const StudyZone = () => {
             s._id === id ? { ...s, participants: [...s.participants, "me"] } : s
           )
         );
+        showSuccess('You have joined the session!');
         setModalMessage({
           title: "Success!",
           msg: "You have joined the session.",
@@ -139,12 +143,14 @@ const StudyZone = () => {
         });
       } else {
         if (res.status === 400 && data.msg === "Already joined") {
+          showError('You are already in this session.');
           setModalMessage({
             title: "Already Joined",
             msg: "You are already in this session.",
             type: "info",
           });
         } else {
+          showError(data.msg || 'Failed to join');
           setModalMessage({
             title: "Error",
             msg: data.msg || "Failed to join",
@@ -154,6 +160,7 @@ const StudyZone = () => {
       }
     } catch (err) {
       console.error(err);
+      showError('Error joining session.');
     }
   };
 
@@ -197,6 +204,7 @@ const StudyZone = () => {
       );
 
       if (res.ok) {
+        showSuccess('Study session created successfully!');
         fetchSessions();
         setIsCreateOpen(false);
         setNewSession({
@@ -209,9 +217,12 @@ const StudyZone = () => {
           maxParticipants: 5,
         });
         setErrors({});
+      } else {
+        showError('Failed to create session.');
       }
     } catch (err) {
       console.error(err);
+      showError('Error creating session.');
     }
   };
 

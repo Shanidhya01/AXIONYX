@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Github } from 'lucide-react';
 import { GithubAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, getRedirectResult, linkWithCredential, signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { showSuccess, showError } from '../lib/toast';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -34,15 +35,18 @@ const Login = ({ onLogin }) => {
             const data = await res.json();
 
             if (!res.ok) {
+                showError(data?.msg || 'Login failed');
                 setServerError(data?.msg || 'Login failed');
                 setIsLoading(false);
                 return;
             }
 
             localStorage.setItem('token', data.token);
+            showSuccess('Welcome back! Logging in...');
             if (onLogin) onLogin();
             navigate('/dashboard');
         } catch (err) {
+            showError('Unable to connect. Please check your internet connection.');
             setServerError('Unable to connect. Please check your internet connection.');
             setIsLoading(false);
         }
@@ -58,10 +62,13 @@ const Login = ({ onLogin }) => {
         const data = await res.json();
         if (!res.ok) {
             const details = data?.details ? `\n${data.details}` : '';
-            throw new Error((data?.msg || 'Social sign-in failed') + details);
+            const errorMsg = (data?.msg || 'Social sign-in failed') + details;
+            showError(errorMsg);
+            throw new Error(errorMsg);
         }
 
         localStorage.setItem('token', data.token);
+        showSuccess('Successfully signed in!');
         if (onLogin) onLogin();
         navigate('/dashboard');
     };
@@ -76,7 +83,10 @@ const Login = ({ onLogin }) => {
                 await exchangeFirebaseIdTokenForJwt(idToken);
             } catch (err) {
                 const message = String(err?.message || '');
-                if (message) setServerError(message);
+                if (message) {
+                    showError(message);
+                    setServerError(message);
+                }
                 setIsLoading(false);
             }
         };
@@ -120,11 +130,15 @@ const Login = ({ onLogin }) => {
                     }
 
                     const pretty = methods.length ? methods.join(', ') : 'another provider';
-                    setServerError(`An account already exists for ${email} using: ${pretty}. Please sign in with that method first.`);
+                    const errorMsg = `An account already exists for ${email} using: ${pretty}. Please sign in with that method first.`;
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 } catch (linkErr) {
-                    setServerError(String(linkErr?.message || 'Account linking failed. Please sign in with the original provider first.'));
+                    const errorMsg = String(linkErr?.message || 'Account linking failed. Please sign in with the original provider first.');
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 }
@@ -140,13 +154,17 @@ const Login = ({ onLogin }) => {
                     await signInWithRedirect(auth, provider);
                     return;
                 } catch (redirectErr) {
-                    setServerError(String(redirectErr?.message || 'Google sign-in failed. Please try again.'));
+                    const errorMsg = String(redirectErr?.message || 'Google sign-in failed. Please try again.');
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 }
             }
 
-            setServerError(String(err?.message || 'Google sign-in failed. Please try again.'));
+            const errorMsg = String(err?.message || 'Google sign-in failed. Please try again.');
+            showError(errorMsg);
+            setServerError(errorMsg);
             setIsLoading(false);
         }
     };
@@ -187,11 +205,15 @@ const Login = ({ onLogin }) => {
                     }
 
                     const pretty = methods.length ? methods.join(', ') : 'another provider';
-                    setServerError(`An account already exists for ${email} using: ${pretty}. Please sign in with that method first.`);
+                    const errorMsg = `An account already exists for ${email} using: ${pretty}. Please sign in with that method first.`;
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 } catch (linkErr) {
-                    setServerError(String(linkErr?.message || 'Account linking failed. Please sign in with the original provider first.'));
+                    const errorMsg = String(linkErr?.message || 'Account linking failed. Please sign in with the original provider first.');
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 }
@@ -207,13 +229,17 @@ const Login = ({ onLogin }) => {
                     await signInWithRedirect(auth, provider);
                     return;
                 } catch (redirectErr) {
-                    setServerError(String(redirectErr?.message || 'GitHub sign-in failed. Please try again.'));
+                    const errorMsg = String(redirectErr?.message || 'GitHub sign-in failed. Please try again.');
+                    showError(errorMsg);
+                    setServerError(errorMsg);
                     setIsLoading(false);
                     return;
                 }
             }
 
-            setServerError(String(err?.message || 'GitHub sign-in failed. Please try again.'));
+            const errorMsg = String(err?.message || 'GitHub sign-in failed. Please try again.');
+            showError(errorMsg);
+            setServerError(errorMsg);
             setIsLoading(false);
         }
     };

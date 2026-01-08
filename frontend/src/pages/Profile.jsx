@@ -3,6 +3,7 @@ import { User, Mail, Lock, Save, Moon, Sun, Monitor, Camera, LogOut, AlertTriang
 import useTheme from '../hooks/useTheme';
 import Modal from '../components/UI/Modal';
 import DatePicker from '../components/UI/DatePicker';
+import { showSuccess, showError } from '../lib/toast';
 
 
 const Profile = ({ onProfileUpdate }) => {
@@ -85,13 +86,18 @@ const Profile = ({ onProfileUpdate }) => {
             })
         });
         if (res.ok) {
+            showSuccess('Profile updated successfully!');
             setMessage('Profile updated successfully!');
             setTimeout(() => setMessage(''), 3000);
             if (onProfileUpdate) onProfileUpdate();
         } else {
+            showError('Failed to update profile.');
             setMessage('Failed to update profile.');
         }
-    } catch (err) { setMessage('Error connecting to server.'); }
+    } catch (err) { 
+        showError('Error connecting to server.');
+        setMessage('Error connecting to server.'); 
+    }
   };
 
   const performLogout = () => { localStorage.removeItem('token'); window.location.href = '/'; };
@@ -99,8 +105,14 @@ const Profile = ({ onProfileUpdate }) => {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setPassError(''); setPassSuccess('');
-    if (passData.new !== passData.confirm) return setPassError("New passwords do not match");
-    if (passData.new.length < 6) return setPassError("Password must be 6+ chars");
+    if (passData.new !== passData.confirm) {
+        showError("New passwords do not match");
+        return setPassError("New passwords do not match");
+    }
+    if (passData.new.length < 6) {
+        showError("Password must be 6+ chars");
+        return setPassError("Password must be 6+ chars");
+    }
     try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/changepassword`, {
@@ -109,13 +121,19 @@ const Profile = ({ onProfileUpdate }) => {
             body: JSON.stringify({ currentPassword: passData.current, newPassword: passData.new })
         });
         const data = await res.json();
-        if (!res.ok) setPassError(data.msg || 'Failed');
-        else {
+        if (!res.ok) {
+            showError(data.msg || 'Failed');
+            setPassError(data.msg || 'Failed');
+        } else {
+            showSuccess('Password changed successfully!');
             setPassSuccess('Password changed!');
             setPassData({ current: '', new: '', confirm: '' });
             setTimeout(() => { setIsPassModalOpen(false); setPassSuccess(''); }, 1500);
         }
-    } catch (err) { setPassError('Server Error'); }
+    } catch (err) { 
+        showError('Server Error');
+        setPassError('Server Error'); 
+    }
   };
 
   if (loading) return <div className="p-10 text-center animate-pulse">Loading Profile...</div>;

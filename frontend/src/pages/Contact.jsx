@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, MapPin, Phone, Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { showSuccess, showError } from '../lib/toast';
 
 const Contact = () => {
   // --- STATE ---
@@ -31,13 +32,16 @@ const Contact = () => {
         });
 
         if (res.ok) {
+            showSuccess('Message sent successfully! We\'ll get back to you soon.');
             setStatus('success');
             setFormData({ subject: '', message: '' }); // Clear form
         } else {
+            showError('Failed to send message. Please try again.');
             setStatus('error');
         }
     } catch (err) {
         console.error(err);
+        showError('Unable to send message. Please check your connection.');
         setStatus('error');
     }
   };

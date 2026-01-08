@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Layout/Sidebar';
 import PageTransition from './components/Layout/PageTransition';
 import useTheme from './hooks/useTheme';
@@ -99,6 +100,34 @@ function App() {
 
   return (
     <Router>
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: theme === 'dark' ? '#1f2937' : '#ffffff',
+            color: theme === 'dark' ? '#f3f4f6' : '#1f2937',
+            border: theme === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#ffffff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#ffffff',
+            },
+          },
+        }}
+      />
+      
       {/* 1. ANIMATION OVERLAY */}
       {showWelcomeAnimation && (
         <div className="fixed inset-0 z-[9999] bg-white dark:bg-[#050505] flex flex-col items-center justify-center animate-in fade-in duration-300">
