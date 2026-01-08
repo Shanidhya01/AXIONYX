@@ -1,4 +1,6 @@
-require('dotenv').config(); 
+if (!process.env.VERCEL) {
+    require('dotenv').config();
+}
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -64,9 +66,24 @@ app.get(['/','/favicon.ico','/favicon.png'], (req, res) => {
     res.status(200).json({ ok: true, service: 'axionyx-backend' });
 });
 
+app.get('/__health', (req, res) => {
+    const missing = [];
+    if (!process.env.MONGO_URI) missing.push('MONGO_URI');
+    if (!process.env.JWT_SECRET) missing.push('JWT_SECRET');
+    // SESSION_SECRET is optional on Vercel (sessions disabled)
+
+    res.status(200).json({
+        ok: true,
+        service: 'axionyx-backend',
+        vercel: IS_VERCEL,
+        commit: process.env.VERCEL_GIT_COMMIT_SHA || null,
+        missing,
+    });
+});
+
 // --- 5. PASSPORT/SESSION MIDDLEWARE ---
 const sessionSecret = process.env.SESSION_SECRET;
-const sessionsEnabled = Boolean(sessionSecret);
+const sessionsEnabled = !IS_VERCEL && Boolean(sessionSecret);
 
 app.set('trust proxy', 1);
 
@@ -82,7 +99,7 @@ if (sessionsEnabled) {
         }
     }));
 } else {
-    console.warn('[session] SESSION_SECRET not set; disabling sessions and Passport session support.');
+    console.warn('[session] Sessions disabled (serverless or missing SESSION_SECRET).');
 }
 
 app.use(passport.initialize());
