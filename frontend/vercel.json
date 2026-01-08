@@ -1,13 +1,12 @@
 {
-  "framework": "nextjs",
+  "buildCommand": "npm run build",
 
-  "buildCommand": "next build",
-
-  "outputDirectory": ".next",
+  "outputDirectory": "dist",
 
   "rewrites": [
     {
-      "source": "/api/(.*)"    
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
 

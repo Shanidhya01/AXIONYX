@@ -161,11 +161,17 @@ app.use('/api/resources', resourceRoutes);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI ;
 
+const IS_VERCEL = !!process.env.VERCEL;
+
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .then(() => {
-        httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        if (!IS_VERCEL) {
+            httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        }
     })
     .catch((err) => console.log(err));
+
+module.exports = app;
 
     
