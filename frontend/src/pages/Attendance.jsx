@@ -32,7 +32,7 @@ const Attendance = () => {
 
   const [timeSlots, setTimeSlots] = useState([]);
   const [mySubjects, setMySubjects] = useState([]);
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const [scheduleGrid, setScheduleGrid] = useState({});
 
   // --- UI STATES ---
@@ -420,7 +420,7 @@ const Attendance = () => {
                     onClick={addSubjectToList}
                     className="p-2 bg-blue-600 text-white rounded-lg"
                   >
-                    <PlusCircle size={20} />
+                    <CheckCircle size={20} />
                   </button>
                 </div>
               </div>

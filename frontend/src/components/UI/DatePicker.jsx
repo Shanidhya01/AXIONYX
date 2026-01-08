@@ -61,19 +61,19 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
   };
 
   const renderHeader = () => (
-    <div className="flex justify-between items-center mb-4 px-1">
+    <div className="flex justify-between items-center mb-5 px-1">
       <button
         onClick={(e) => {
           e.preventDefault();
           setCurrentMonth(subMonths(currentMonth, 1));
         }}
-        className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-sm"
+        className="p-2.5 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
       >
-        <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+        <ChevronLeft size={20} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" />
       </button>
 
       <div className="flex items-center gap-2 relative" ref={yearDropdownRef}>
-        <span className="font-bold text-gray-800 dark:text-white text-base">
+        <span className="font-black text-gray-800 dark:text-white text-lg tracking-wide">
           {format(currentMonth, "MMMM")}
         </span>
 
@@ -81,25 +81,25 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
         <button
           type="button"
           onClick={() => setIsYearOpen(!isYearOpen)}
-          className="flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 text-sm hover:scale-105 transition-all"
+          className="flex items-center gap-1 font-black text-blue-600 dark:text-blue-400 hover:text-blue-500 text-base hover:scale-110 transition-all duration-200 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
         >
           {currentMonth.getFullYear()}{" "}
           <ChevronDown
-            size={14}
-            className={`transition-transform ${isYearOpen ? "rotate-180" : ""}`}
+            size={16}
+            className={`transition-transform duration-300 ${isYearOpen ? "rotate-180" : ""}`}
           />
         </button>
 
         {/* Custom Year Dropdown List */}
         {isYearOpen && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-24 max-h-48 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[60] custom-scrollbar">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-28 max-h-52 overflow-y-auto bg-white/98 dark:bg-black/98 border-2 border-gray-200/60 dark:border-gray-700/60 rounded-xl shadow-2xl shadow-blue-500/20 dark:shadow-blue-400/20 z-[60] custom-scrollbar backdrop-blur-xl ring-1 ring-blue-500/10 dark:ring-blue-400/10">
             {years.map((y) => (
               <button
                 key={y}
                 onClick={() => handleYearSelect(y)}
-                className={`w-full py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                className={`w-full py-2.5 text-sm font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-200 hover:scale-105 active:scale-95 ${
                   currentMonth.getFullYear() === y
-                    ? "text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30"
+                    ? "text-blue-600 dark:text-blue-400 font-black bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 shadow-md"
                     : "text-gray-700 dark:text-gray-300"
                 }`}
               >
@@ -115,9 +115,9 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
           e.preventDefault();
           setCurrentMonth(addMonths(currentMonth, 1));
         }}
-        className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-sm"
+        className="p-2.5 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
       >
-        <ChevronRight size={18} className="text-gray-600 dark:text-gray-300" />
+        <ChevronRight size={20} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" />
       </button>
     </div>
   );
@@ -142,13 +142,13 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
         days.push(
           <div
             key={day}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm cursor-pointer transition-all mx-auto font-medium ${
+            className={`w-10 h-10 flex items-center justify-center rounded-xl text-sm cursor-pointer transition-all duration-200 mx-auto font-bold ${
               !isSameMonth(day, monthStart)
-                ? "text-gray-300 dark:text-gray-600 opacity-50"
-                : "text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 active:scale-95"
+                ? "text-gray-300 dark:text-gray-600 opacity-40"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 hover:scale-115 active:scale-95 hover:shadow-md hover:text-blue-600 dark:hover:text-blue-400 hover:font-extrabold"
             } ${
               isSelected
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/30 hover:!from-blue-600 hover:!to-indigo-600 !opacity-100 scale-110"
+                ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white font-black shadow-xl shadow-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/60 !opacity-100 scale-115 ring-2 ring-blue-300/50 dark:ring-blue-400/50 hover:scale-120"
                 : ""
             }`}
             onClick={() => {
@@ -162,7 +162,7 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
         day = addDays(day, 1);
       }
       rows.push(
-        <div key={day} className="grid grid-cols-7 gap-1 mb-1">
+        <div key={day} className="grid grid-cols-7 gap-2 mb-2">
           {days}
         </div>
       );
@@ -183,19 +183,18 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
       {/* Main Input Field */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        // Forced padding-left: 3rem to clear the icon safely
         style={{ paddingLeft: "3rem" }}
-        className="flex items-center justify-between w-full glass-input rounded-xl pr-4 py-3 cursor-pointer transition-all relative border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 focus:border-blue-500 shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99]"
+        className="flex items-center justify-between w-full glass-input rounded-xl pr-4 py-3 cursor-pointer transition-all duration-300 relative border-2 border-gray-200/50 dark:border-gray-700/50 hover:border-blue-400/50 dark:hover:border-blue-500/50 hover:bg-white/80 dark:hover:bg-black/60 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 dark:hover:shadow-blue-400/20 hover:scale-[1.02] active:scale-[0.98] backdrop-blur-xl group"
       >
         <CalendarIcon
           size={20}
-          className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-            value ? "text-blue-500" : "text-gray-400"
+          className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 group-hover:scale-110 ${
+            value ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"
           }`}
         />
         <span
-          className={`text-sm font-semibold ${
-            value ? "text-gray-800 dark:text-white" : "text-gray-400"
+          className={`text-lg font-bold tracking-wide ${
+            value ? "text-gray-800 dark:text-white" : "text-gray-400 dark:text-gray-500"
           }`}
         >
           {value ? format(new Date(value), "MMMM dd, yyyy") : placeholder}
@@ -203,13 +202,13 @@ const DatePicker = ({ value, onChange, placeholder = "Select Date" }) => {
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 p-4 w-72 glass-panel rounded-2xl z-50 bg-white/95 dark:bg-[#111]/95 backdrop-blur-xl shadow-2xl border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in-95">
+        <div className="absolute top-full left-0 mt-3 p-5 w-80 glass-panel rounded-2xl z-50 bg-white/98 dark:bg-black/98 backdrop-blur-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 border-2 border-gray-200/60 dark:border-gray-700/60 ring-1 ring-blue-500/10 dark:ring-blue-400/10 animate-in fade-in zoom-in-95 duration-300">
           {renderHeader()}
-          <div className="grid grid-cols-7 gap-1 text-center mb-3">
+          <div className="grid grid-cols-7 gap-2 text-center mb-4">
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
               <span
                 key={d}
-                className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest"
               >
                 {d}
               </span>
