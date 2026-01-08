@@ -26,7 +26,11 @@ const communityRoutes = require('./routes/communityRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
 
 const app = express();
-const httpServer = createServer(app);
+const IS_VERCEL = !!process.env.VERCEL;
+
+// Vercel Serverless does not support long-lived WebSocket servers.
+// Keep Socket.IO only for local/self-hosted deployments.
+const httpServer = IS_VERCEL ? null : createServer(app);
 
 const corsOptions = {
     origin: process.env.CLIENT_URL, 
@@ -36,15 +40,18 @@ const corsOptions = {
 };
 
 // --- 3. SETUP SOCKET.IO ---
-const io = new Server(httpServer, {
-    cors: {
-        origin: process.env.CLIENT_URL, 
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
-        credentials: true 
-    }
-});
+let io = null;
+if (!IS_VERCEL) {
+    io = new Server(httpServer, {
+        cors: {
+            origin: process.env.CLIENT_URL,
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            credentials: true
+        }
+    });
+}
 
-// Share io instance with controllers
+// Share io instance with controllers (null on Vercel)
 app.set('io', io);
 
 // --- 4. CORE MIDDLEWARE ---
@@ -53,24 +60,34 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // --- 5. PASSPORT/SESSION MIDDLEWARE ---
+const sessionSecret = process.env.SESSION_SECRET;
+const sessionsEnabled = Boolean(sessionSecret);
+
 app.set('trust proxy', 1);
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: { 
-        maxAge: 1000 * 60 * 60 * 24 ,
-        secure: process.env.NODE_ENV === 'production', 
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' 
-    }
-}));
+
+if (sessionsEnabled) {
+    app.use(session({
+        secret: sessionSecret,
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        }
+    }));
+} else {
+    console.warn('[session] SESSION_SECRET not set; disabling sessions and Passport session support.');
+}
 
 app.use(passport.initialize());
-app.use(passport.session());
+if (sessionsEnabled) {
+    app.use(passport.session());
+}
 
 
-// --- 6. REAL-TIME SOCKET LOGIC (Unchanged) ---
-io.on('connection', (socket) => {
+// --- 6. REAL-TIME SOCKET LOGIC ---
+if (io) io.on('connection', (socket) => {
     console.log(`User Connected: ${socket.id}`);
     socket.on('join_room', (data) => {
         socket.join(data);
@@ -158,19 +175,35 @@ app.use('/api/resources', resourceRoutes);
 
 
 // --- 8. DATABASE CONNECTION & SERVER START ---
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI ;
+const PORT = process.env.PORT || 5001;
 
-const IS_VERCEL = !!process.env.VERCEL;
+let mongoConnectionPromise;
+const connectToMongo = () => {
+    if (mongoose.connection.readyState === 1) return Promise.resolve();
+    if (mongoConnectionPromise) return mongoConnectionPromise;
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .then(() => {
-        if (!IS_VERCEL) {
-            httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-        }
-    })
-    .catch((err) => console.log(err));
+    const MONGO_URI = process.env.MONGO_URI;
+    if (!MONGO_URI) {
+        console.error('[db] Missing required env var: MONGO_URI');
+        return Promise.resolve();
+    }
+
+    mongoConnectionPromise = mongoose
+        .connect(MONGO_URI)
+        .then(() => console.log('MongoDB connected'))
+        .catch((err) => {
+            console.error('MongoDB connection error:', err);
+            mongoConnectionPromise = undefined;
+        });
+
+    return mongoConnectionPromise;
+};
+
+connectToMongo().then(() => {
+    if (!IS_VERCEL) {
+        httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    }
+});
 
 module.exports = app;
 
