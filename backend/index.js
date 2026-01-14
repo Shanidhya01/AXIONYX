@@ -30,6 +30,15 @@ const resourceRoutes = require('./routes/resourceRoutes');
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 
+// Ensure crashes show up in Vercel logs with a stack trace.
+process.on('unhandledRejection', (reason) => {
+    console.error('[process] unhandledRejection', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('[process] uncaughtException', err);
+    // Let the platform handle restart; don't call process.exit() in serverless.
+});
+
 // Vercel Serverless does not support long-lived WebSocket servers.
 // Keep Socket.IO only for local/self-hosted deployments.
 const httpServer = IS_VERCEL ? null : createServer(app);
@@ -235,6 +244,20 @@ app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/resources', resourceRoutes);
+
+// --- 9. LAST-RESORT ERROR HANDLER ---
+// Must be after routes.
+app.use((err, req, res, next) => {
+    console.error('[express] unhandled error', {
+        method: req.method,
+        url: req.originalUrl,
+        message: err?.message,
+        stack: err?.stack,
+    });
+
+    if (res.headersSent) return next(err);
+    res.status(500).json({ msg: 'Internal server error' });
+});
 
 
 // --- 8. DATABASE CONNECTION & SERVER START ---

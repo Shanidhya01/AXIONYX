@@ -5,7 +5,12 @@ const auth = require('../middleware/auth');
 const resourceController = require('../controllers/resourceController');
 const multer = require('multer');
 
-const upload = multer({ dest: 'uploads/' });
+const IS_VERCEL = !!process.env.VERCEL;
+
+// Vercel Serverless has a read-only filesystem (except /tmp). This project currently
+// does not persist uploaded files to object storage, so we disable direct file uploads
+// on Vercel and require link-based resources instead.
+const upload = IS_VERCEL ? null : multer({ dest: 'uploads/' });
 
 const maybeUploadSingle = (fieldName) => (req, res, next) => {
 	const contentType = String(req.headers['content-type'] || '');
@@ -13,6 +18,12 @@ const maybeUploadSingle = (fieldName) => (req, res, next) => {
 	// Only parse multipart requests with multer; allow JSON link-only payloads.
 	if (!contentType.toLowerCase().startsWith('multipart/form-data')) {
 		return next();
+	}
+
+	if (IS_VERCEL) {
+		return res.status(400).json({
+			msg: 'Direct file upload is not supported on Vercel. Please provide fileUrl (e.g., a Drive link).'
+		});
 	}
 
 	return upload.single(fieldName)(req, res, (err) => {
