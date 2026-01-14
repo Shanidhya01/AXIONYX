@@ -7,6 +7,7 @@ import { showSuccess, showError } from '../lib/toast';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -25,14 +26,28 @@ const Login = ({ onLogin }) => {
         setServerError('');
         if (!validateForm()) return;
 
+        if (!API_BASE_URL) {
+            const msg = 'Missing VITE_API_BASE_URL configuration.';
+            showError(msg);
+            setServerError(msg);
+            return;
+        }
+
         setIsLoading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+            const base = String(API_BASE_URL).replace(/\/+$/, '');
+            const res = await fetch(`${base}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-            const data = await res.json();
+            const text = await res.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch {
+                data = { msg: text };
+            }
 
             if (!res.ok) {
                 showError(data?.msg || 'Login failed');
@@ -53,13 +68,24 @@ const Login = ({ onLogin }) => {
     };
 
     const exchangeFirebaseIdTokenForJwt = async (idToken) => {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/firebase`, {
+        if (!API_BASE_URL) {
+            throw new Error('Missing VITE_API_BASE_URL configuration.');
+        }
+
+        const base = String(API_BASE_URL).replace(/\/+$/, '');
+        const res = await fetch(`${base}/api/auth/firebase`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idToken }),
         });
 
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            data = { msg: text };
+        }
         if (!res.ok) {
             const details = data?.details ? `\n${data.details}` : '';
             const errorMsg = (data?.msg || 'Social sign-in failed') + details;
