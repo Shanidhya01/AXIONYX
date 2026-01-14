@@ -1,11 +1,34 @@
 const Subject = require('../models/Subject');
 const Timetable = require('../models/Timetable'); // <--- New Import
 
+const normalizeSubjectName = (name) => String(name ?? '').trim().toUpperCase();
+
 // 1. GET ALL SUBJECTS
 exports.getSubjects = async (req, res) => {
   try {
-    const subjects = await Subject.find({ user: req.user.userId });
-    res.json(subjects);
+    const subjects = await Subject.find({ user: req.user.userId }).lean();
+
+    // Defensive: older data may contain duplicates with the same name.
+    // Dedupe by normalized name so the UI doesn't render duplicate cards.
+    const byName = new Map();
+    for (const subject of subjects) {
+      const key = normalizeSubjectName(subject.name);
+      if (!key) continue;
+
+      const existing = byName.get(key);
+      if (!existing) {
+        byName.set(key, subject);
+        continue;
+      }
+
+      // Merge minimal fields so data isn't lost in the response.
+      existing.sessions = Math.max(existing.sessions ?? 0, subject.sessions ?? 0);
+      existing.attended = Math.max(existing.attended ?? 0, subject.attended ?? 0);
+      existing.schedule = [...(existing.schedule ?? []), ...(subject.schedule ?? [])];
+      existing.history = [...(existing.history ?? []), ...(subject.history ?? [])];
+    }
+
+    res.json([...byName.values()]);
   } catch (err) {
     res.status(500).send('Server Error');
   }
@@ -52,9 +75,21 @@ exports.saveTimeSlots = async (req, res) => {
 exports.createSubject = async (req, res) => {
   try {
     const { name, code, sessions, attended } = req.body;
+
+    const normalizedName = normalizeSubjectName(name);
+    if (!normalizedName) {
+      return res.status(400).json({ msg: 'Subject name is required' });
+    }
+
+    // Prevent duplicates per-user (older DBs may already have duplicates).
+    const existing = await Subject.findOne({ user: req.user.userId, name: normalizedName });
+    if (existing) {
+      return res.json(existing);
+    }
+
     const newSubject = new Subject({
       user: req.user.userId,
-      name,
+      name: normalizedName,
       code,
       sessions: Number(sessions) || 0,
       attended: Number(attended) || 0,
@@ -113,12 +148,18 @@ exports.updateTimetable = async (req, res) => {
   try {
     const { day, startTime, endTime, subjectName, room } = req.body;
 
-    let subject = await Subject.findOne({ user: req.user.userId, name: subjectName });
+    const normalizedName = normalizeSubjectName(subjectName);
+    if (!normalizedName) {
+      return res.status(400).json({ msg: 'subjectName is required' });
+    }
+
+    // Find by normalized name to avoid duplicates caused by case/spacing.
+    let subject = await Subject.findOne({ user: req.user.userId, name: normalizedName });
     
     if (!subject) {
       subject = new Subject({
         user: req.user.userId,
-        name: subjectName,
+        name: normalizedName,
         sessions: 0,
         attended: 0,
         schedule: []

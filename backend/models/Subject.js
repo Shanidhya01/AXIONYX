@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const SubjectSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  name: { type: String, required: true },
+  name: { type: String, required: true, trim: true, uppercase: true },
   code: { type: String, default: '' },
   sessions: { type: Number, default: 0 }, 
   attended: { type: Number, default: 0 }, 
