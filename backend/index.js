@@ -41,6 +41,29 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
+// --- DB: helper for serverless + local ---
+let mongoConnectionPromise;
+const connectToMongo = () => {
+    if (mongoose.connection.readyState === 1) return Promise.resolve();
+    if (mongoConnectionPromise) return mongoConnectionPromise;
+
+    const MONGO_URI = process.env.MONGO_URI;
+    if (!MONGO_URI) {
+        console.error('[db] Missing required env var: MONGO_URI');
+        return Promise.resolve();
+    }
+
+    mongoConnectionPromise = mongoose
+        .connect(MONGO_URI)
+        .then(() => console.log('MongoDB connected'))
+        .catch((err) => {
+            console.error('MongoDB connection error:', err);
+            mongoConnectionPromise = undefined;
+        });
+
+    return mongoConnectionPromise;
+};
+
 // --- 3. SETUP SOCKET.IO ---
 let io = null;
 if (!IS_VERCEL) {
@@ -60,6 +83,11 @@ app.set('io', io);
 app.use(cors(corsOptions)); 
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// On serverless, fail fast instead of buffering DB ops until timeout.
+if (IS_VERCEL) {
+    mongoose.set('bufferCommands', false);
+}
 
 // Lightweight routes that should never depend on DB
 app.get(['/','/favicon.ico','/favicon.png'], (req, res) => {
@@ -184,6 +212,19 @@ if (io) io.on('connection', (socket) => {
 });
 
 // --- 7. REGISTER ROUTES ---
+// Connect to Mongo lazily for API requests (must be registered BEFORE /api routes)
+app.use('/api', async (req, res, next) => {
+    if (mongoose.connection.readyState === 1) return next();
+    if (!process.env.MONGO_URI) {
+        return res.status(500).json({ msg: 'Server misconfigured: MONGO_URI is not set' });
+    }
+    try {
+        await connectToMongo();
+        return next();
+    } catch (e) {
+        return res.status(500).json({ msg: 'Database connection failed' });
+    }
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
@@ -198,42 +239,6 @@ app.use('/api/resources', resourceRoutes);
 
 // --- 8. DATABASE CONNECTION & SERVER START ---
 const PORT = process.env.PORT || 5001;
-
-let mongoConnectionPromise;
-const connectToMongo = () => {
-    if (mongoose.connection.readyState === 1) return Promise.resolve();
-    if (mongoConnectionPromise) return mongoConnectionPromise;
-
-    const MONGO_URI = process.env.MONGO_URI;
-    if (!MONGO_URI) {
-        console.error('[db] Missing required env var: MONGO_URI');
-        return Promise.resolve();
-    }
-
-    mongoConnectionPromise = mongoose
-        .connect(MONGO_URI)
-        .then(() => console.log('MongoDB connected'))
-        .catch((err) => {
-            console.error('MongoDB connection error:', err);
-            mongoConnectionPromise = undefined;
-        });
-
-    return mongoConnectionPromise;
-};
-
-// Connect to Mongo lazily for API requests (prevents cold-start crashes/timeouts)
-app.use('/api', async (req, res, next) => {
-    if (mongoose.connection.readyState === 1) return next();
-    if (!process.env.MONGO_URI) {
-        return res.status(500).json({ msg: 'Server misconfigured: MONGO_URI is not set' });
-    }
-    try {
-        await connectToMongo();
-        return next();
-    } catch (e) {
-        return res.status(500).json({ msg: 'Database connection failed' });
-    }
-});
 
 if (!IS_VERCEL) {
     connectToMongo().then(() => {
