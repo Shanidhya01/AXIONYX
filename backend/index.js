@@ -43,31 +43,11 @@ process.on('uncaughtException', (err) => {
 // Keep Socket.IO only for local/self-hosted deployments.
 const httpServer = IS_VERCEL ? null : createServer(app);
 
-const allowedOrigins = String(process.env.CLIENT_URL || '')
-    .split(/[,\s]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
 const corsOptions = {
-    origin: (origin, callback) => {
-        // Non-browser clients (curl, server-to-server) often have no Origin.
-        if (!origin) return callback(null, true);
-
-        // If nothing configured, reflect the request origin.
-        if (allowedOrigins.length === 0) return callback(null, true);
-
-        // Explicit allow-list.
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-
-        // Allow Vercel-hosted frontends by default.
-        if (/^https:\/\/.+\.vercel\.app$/i.test(origin)) return callback(null, true);
-
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'x-auth-token', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 200,
+    origin: process.env.CLIENT_URL || true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true, 
+    optionsSuccessStatus: 200
 };
 
 // --- DB: helper for serverless + local ---
@@ -110,7 +90,9 @@ app.set('io', io);
 
 // --- 4. CORE MIDDLEWARE ---
 app.use(cors(corsOptions)); 
-app.options('*', cors(corsOptions));
+// Handle CORS preflight across all routes.
+// Express v5 expects a valid path-to-regexp pattern; regex works reliably.
+app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
